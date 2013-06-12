@@ -65,7 +65,7 @@ skip(size_t size, FILE *fp)
 }
 
 static void
-read_fourcc(char *buf, FILE *fp)
+read_fcc(char *buf, FILE *fp)
 {
 
 	read4(buf, fp);
@@ -94,7 +94,7 @@ read_u32(uint32_t *sz, FILE *fp)
 }
 
 struct hdr {
-	char fourcc[4];
+	char fcc[4];
 	uint32_t size;
 };
 
@@ -102,7 +102,7 @@ static void
 read_hdr(struct hdr *hdr, FILE *fp)
 {
 
-	read_fourcc(hdr->fourcc, fp);
+	read_fcc(hdr->fcc, fp);
 	read_u32(&hdr->size, fp);
 }
 
@@ -179,19 +179,19 @@ riff(struct ctx *ctx, uint32_t rest, FILE *fp)
 		uint32_t chunksize;
 
 		read_hdr(&h, fp);
-		if (!memcmp(h.fourcc, "LIST", 4)) {
+		if (!memcmp(h.fcc, "LIST", 4)) {
 			char type[4];
 
-			read_fourcc(type, fp);
+			read_fcc(type, fp);
 			iprintf(ctx, "LIST %" PRIu32 " %4.4s\n", h.size, type);
 			riff(ctx, h.size - 4, fp);
 		} else {
-			iprintf(ctx, "%4.4s %" PRIu32 "\n", h.fourcc, h.size);
-			if (!memcmp(h.fourcc, "nctg", 4)) {
+			iprintf(ctx, "%4.4s %" PRIu32 "\n", h.fcc, h.size);
+			if (!memcmp(h.fcc, "nctg", 4)) {
 			nctg(ctx, h.size, fp);
 			} else {
 				/* skip unknown fcc */
-				iprintf(ctx, "%4.4s %" PRIu32 "\n", h.fourcc,
+				iprintf(ctx, "%4.4s %" PRIu32 "\n", h.fcc,
 				    h.size);
 				skip(size_pad(h.size), fp);
 			}
@@ -225,10 +225,10 @@ main(int argc, char *argv[])
 		err(EXIT_FAILURE, "open %s", filename);
 	}
 	read_hdr(&h, fp);
-	if (memcmp(h.fourcc, "RIFF", 4)) {
+	if (memcmp(h.fcc, "RIFF", 4)) {
 		errx(EXIT_FAILURE, "not RIFF");
 	}
-	read_fourcc(type, fp);
+	read_fcc(type, fp);
 	printf("RIFF %" PRIu32 " %4.4s\n", h.size, type);
 	ctx.indent = 0;
 	riff(&ctx, h.size - 4, fp);
