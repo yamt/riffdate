@@ -294,7 +294,6 @@ riff(struct ctx *ctx, uint32_t rest, FILE *fp)
 			 */
 			if (ctx->iprd != NULL && ctx->isft != NULL &&
 			    ctx->idit != NULL) {
-				iprintf(ctx, "IPRD/ISFT: %s/%s\n", ctx->iprd, ctx->isft);
 				if (!strcmp(ctx->iprd, "SIGMA") &&
 				    !strcmp(ctx->isft, "DP2")) {
 					fix_sigma_dp2_idit(ctx->idit);
