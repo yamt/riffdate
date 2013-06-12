@@ -89,7 +89,9 @@ static void
 skip(size_t size, FILE *fp)
 {
 
-    	fseeko(fp, (off_t)size, SEEK_CUR);
+	if (fseeko(fp, (off_t)size, SEEK_CUR) == -1) {
+		err(EXIT_FAILURE, "fseeko");
+	}
 }
 
 static void
@@ -247,8 +249,8 @@ nctg(struct ctx *ctx, uint32_t rest, FILE *fp)
 			    "CreateDate", buf);
 			free(buf);
 			break;
-		show_tree:
 		default:
+		show_tree:
 			skip(size, fp);
 			break;
 		}
@@ -331,7 +333,7 @@ static void
 usage(void)
 {
 
-	fprintf(stderr, "usage: %s [-d] file\n", getprogname());
+	(void)fprintf(stderr, "usage: %s [-d] file\n", getprogname());
 	exit(EXIT_FAILURE);
 }
 
@@ -381,4 +383,5 @@ main(int argc, char *argv[])
 	}
 
 	exit(EXIT_SUCCESS);
+	/*NOTREACHED*/
 }
