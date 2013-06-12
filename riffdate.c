@@ -207,7 +207,7 @@ fix_sigma_dp2_idit(char *buf)
 	for (i = 0; i < sizeof(where) / sizeof(where[0]); i++) {
 		const char ch = buf[where[i]];
 
-		if (ch < '0' || '0' + 15 < '0') {
+		if (ch < '0' || '0' + 16 <= ch) {
 			return;
 		}
 	}
