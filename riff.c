@@ -188,11 +188,9 @@ riff(struct ctx *ctx, uint32_t rest, FILE *fp)
 		} else {
 			iprintf(ctx, "%4.4s %" PRIu32 "\n", h.fcc, h.size);
 			if (!memcmp(h.fcc, "nctg", 4)) {
-			nctg(ctx, h.size, fp);
+				nctg(ctx, h.size, fp);
 			} else {
 				/* skip unknown fcc */
-				iprintf(ctx, "%4.4s %" PRIu32 "\n", h.fcc,
-				    h.size);
 				skip(size_pad(h.size), fp);
 			}
 		}
