@@ -41,7 +41,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-bool show_tree = false;
+bool show_tree = false;  /* a knob for debug */
 
 static void
 read_bytes(void *buf, size_t size, FILE *fp)
