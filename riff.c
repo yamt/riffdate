@@ -37,10 +37,10 @@
 #include <string.h>
 
 static void
-read4(void *buf, FILE *fp)
+read_bytes(void *buf, size_t size, FILE *fp)
 {
 
-	if (fread(buf, 4, 1, fp) != 0) {
+	if (fread(buf, size, 1, fp) != 0) {
 		if (ferror(fp)) {
 			err(EXIT_FAILURE, "fread");
 		}
@@ -51,6 +51,20 @@ read4(void *buf, FILE *fp)
 }
 
 static void
+read4(void *buf, FILE *fp)
+{
+
+	read_bytes(buf, 4, fp);
+}
+
+static void
+skip(size_t size, FILE *fp)
+{
+
+    	fseek(fp, size, SEEK_CUR);
+}
+
+static void
 read_fourcc(char *buf, FILE *fp)
 {
 
@@ -58,7 +72,17 @@ read_fourcc(char *buf, FILE *fp)
 }
 
 static void
-read_size(uint32_t *sz, FILE *fp)
+read_u16(uint16_t *sz, FILE *fp)
+{
+	unsigned char buf[2];
+
+	read_bytes(buf, 2, fp);
+	*sz = (uint32_t)buf[0]
+	    + ((uint32_t)buf[1] << 8);
+}
+
+static void
+read_u32(uint32_t *sz, FILE *fp)
 {
 	unsigned char buf[4];
 
@@ -79,7 +103,7 @@ read_hdr(struct hdr *hdr, FILE *fp)
 {
 
 	read_fourcc(hdr->fourcc, fp);
-	read_size(&hdr->size, fp);
+	read_u32(&hdr->size, fp);
 }
 
 static uint32_t
@@ -111,6 +135,40 @@ iprintf(const struct ctx *ctx, const char *format, ...)
 	va_end(ap);
 }
 
+/* http://www.sno.phy.queensu.ca/~phil/exiftool/TagNames/Nikon.html#AVITags */
+static void
+nctg(struct ctx *ctx, uint32_t rest, FILE *fp)
+{
+
+	ctx->indent++;
+	while (rest > 0) {
+		uint16_t type;
+		uint16_t size;
+		char *buf;
+
+		read_u16(&type, fp);
+		read_u16(&size, fp);
+		switch (type) {
+		case 0x0013:
+		case 0x0014:
+			buf = malloc(size);
+			read_bytes(buf, size, fp);
+			iprintf(ctx, "%s: %s\n",
+			    (type == 0x0013) ? "DateTimeOriginal" :
+			    "CreateDate", buf);
+			free(buf);
+			break;
+		default:
+			iprintf(ctx, "ntcg %" PRIu16 " %" PRIx16 "\n",
+			    type, size);
+			skip(size, fp);
+			break;
+		}
+		rest -= 4 + size;
+	}
+	ctx->indent--;
+}
+
 static void
 riff(struct ctx *ctx, uint32_t rest, FILE *fp)
 {
@@ -127,12 +185,18 @@ riff(struct ctx *ctx, uint32_t rest, FILE *fp)
 			read_fourcc(type, fp);
 			iprintf(ctx, "LIST %" PRIu32 " %4.4s\n", h.size, type);
 			riff(ctx, h.size - 4, fp);
-			chunksize = 8 + size_pad(h.size);
 		} else {
 			iprintf(ctx, "%4.4s %" PRIu32 "\n", h.fourcc, h.size);
-			fseek(fp, size_pad(h.size), SEEK_CUR);
-			chunksize = 8 + size_pad(h.size);
+			if (!memcmp(h.fourcc, "nctg", 4)) {
+			nctg(ctx, h.size, fp);
+			} else {
+				/* skip unknown fcc */
+				iprintf(ctx, "%4.4s %" PRIu32 "\n", h.fourcc,
+				    h.size);
+				skip(size_pad(h.size), fp);
+			}
 		}
+		chunksize = 8 + size_pad(h.size);
 		if (rest < chunksize) {
 			iprintf(ctx, "inconsist sizes %" PRIu32 " < %" PRIu32
 			    "\n", rest, chunksize);
