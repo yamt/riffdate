@@ -40,6 +40,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 bool show_tree = false;  /* a knob for debug */
 
@@ -318,6 +319,14 @@ riff(struct ctx *ctx, uint32_t rest, FILE *fp)
 	ctx->indent--;
 }
 
+static void
+usage(void)
+{
+
+	fprintf(stderr, "usage: %s [-d] file\n", getprogname());
+	exit(EXIT_FAILURE);
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -326,11 +335,24 @@ main(int argc, char *argv[])
 	struct hdr h;
 	char type[4];
 	struct ctx ctx;
+	int ch;
+	extern int optind;
 
-	if (argc != 2) {
-		exit(EXIT_FAILURE);
+	while ((ch = getopt(argc, argv, "d")) != -1) {
+		switch (ch) {
+		case 'd':
+			show_tree = true;
+			break;
+		default:
+			usage();
+		}
 	}
-	filename = argv[1];
+	argc -= optind;
+	argv += optind;
+	if (argc != 1) {
+		usage();
+	}
+	filename = argv[0];
 	fp = fopen(filename, "rb");
 	if (fp == NULL) {
 		err(EXIT_FAILURE, "open %s", filename);
