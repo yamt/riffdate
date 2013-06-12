@@ -89,7 +89,7 @@ static void
 skip(size_t size, FILE *fp)
 {
 
-    	fseek(fp, size, SEEK_CUR);
+    	fseeko(fp, (off_t)size, SEEK_CUR);
 }
 
 static void
