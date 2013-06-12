@@ -30,6 +30,14 @@
  */
 
 /*
+ * tested with AVI files produced by the following cameras.
+ *    SIGMA DP2
+ *    SIGMA DP2 Merrill
+ *    Nikon COOLPIX S30
+ */
+
+/*
+ * AVI RIFF File Reference
  * http://msdn.microsoft.com/en-us/library/windows/desktop/dd318189(v=vs.85).aspx
  */
 
