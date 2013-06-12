@@ -31,10 +31,13 @@
 
 #include <err.h>
 #include <inttypes.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+
+bool show_tree = false;
 
 static void
 read_bytes(void *buf, size_t size, FILE *fp)
@@ -56,6 +59,18 @@ read4(void *buf, FILE *fp)
 
 	read_bytes(buf, 4, fp);
 }
+
+static void *
+save(size_t size, FILE *fp)
+{
+	char *buf;
+
+	buf = malloc(size + 1);
+	read_bytes(buf, size, fp);
+	buf[size] = 0; /* NUL terminate for safety */
+	return buf;
+}
+
 
 static void
 skip(size_t size, FILE *fp)
@@ -116,6 +131,9 @@ size_pad(uint32_t sz)
 
 struct ctx {
 	unsigned int indent;
+	char *idit;
+	char *iprd;
+	char *isft;
 };
 
 #include <stdarg.h>
@@ -126,6 +144,9 @@ iprintf(const struct ctx *ctx, const char *format, ...)
 	unsigned int i;
 	va_list ap;
 
+	if (!show_tree) {
+		return;
+	}
 	for (i = 0; i < ctx->indent; i++) {
 		printf(" ");
 	}
@@ -133,6 +154,57 @@ iprintf(const struct ctx *ctx, const char *format, ...)
 	va_start(ap, format);
 	vprintf(format, ap);
 	va_end(ap);
+}
+
+/*
+ * SIGMA DP2 seems to produce a broken IDIT like
+ *    "THU FEB 0= 0;:03:0? 200;\n "
+ *    "SUN APR 0> 11:08:03 200=\n "
+ *    "SUN APR 0> 11:07:37 200=\n "
+ */
+
+static void
+fix_sigma_dp2_idit_number(char *buf, unsigned int idx, unsigned int n)
+{
+	unsigned int i;
+	unsigned int v;
+
+	v = 0;
+	for (i = 0; i < n; i++) {
+		v = v * 16 + buf[idx + i] - '0';
+	}
+	for (i = 0; i < n; i++) {
+		buf[idx + n - 1 - i] = '0' + (v % 10);
+		v /= 10;
+	}
+}
+
+static void
+fix_sigma_dp2_idit(char *buf)
+{
+	static const unsigned int where[] = {8, 11, 14, 17, 22};
+	unsigned int i;
+
+	/*
+	 * sanity checks
+	 */
+	if (strlen(buf) != strlen("SUN APR 0> 11:07:37 200=\n ")) {
+		return;
+	}
+	for (i = 0; i < sizeof(where) / sizeof(where[0]); i++) {
+		const char ch = buf[where[i]];
+
+		if (ch < '0' || '0' + 15 < '0') {
+			return;
+		}
+	}
+
+	/*
+	 * fix digits
+	 */
+	for (i = 0; i < sizeof(where) / sizeof(where[0]); i++) {
+		fix_sigma_dp2_idit_number(buf, where[i], 2);
+	}
 }
 
 /* http://www.sno.phy.queensu.ca/~phil/exiftool/TagNames/Nikon.html#AVITags */
@@ -148,19 +220,22 @@ nctg(struct ctx *ctx, uint32_t rest, FILE *fp)
 
 		read_u16(&type, fp);
 		read_u16(&size, fp);
+		if (show_tree) {
+			goto show_tree;
+		}
+		iprintf(ctx, "ntcg %" PRIu16 " %" PRIx16 "\n", type, size);
 		switch (type) {
 		case 0x0013:
 		case 0x0014:
 			buf = malloc(size);
 			read_bytes(buf, size, fp);
-			iprintf(ctx, "%s: %s\n",
+			printf("%s: %s\n",
 			    (type == 0x0013) ? "DateTimeOriginal" :
 			    "CreateDate", buf);
 			free(buf);
 			break;
+		show_tree:
 		default:
-			iprintf(ctx, "ntcg %" PRIu16 " %" PRIx16 "\n",
-			    type, size);
 			skip(size, fp);
 			break;
 		}
@@ -184,14 +259,49 @@ riff(struct ctx *ctx, uint32_t rest, FILE *fp)
 
 			read_fcc(type, fp);
 			iprintf(ctx, "LIST %" PRIu32 " %4.4s\n", h.size, type);
+			if (!show_tree && !memcmp(type, "movi" ,4)) {
+				break;
+			}
 			riff(ctx, h.size - 4, fp);
 		} else {
 			iprintf(ctx, "%4.4s %" PRIu32 "\n", h.fcc, h.size);
-			if (!memcmp(h.fcc, "nctg", 4)) {
+			if (!memcmp(h.fcc, "IPRD", 4)) {
+				/* RIFF:AVI/LIST:INFO/IPRD */
+				free(ctx->iprd); /* pedantic */
+				ctx->iprd = save(h.size, fp);
+			} else if (!memcmp(h.fcc, "ISFT", 4)) {
+				/* RIFF:AVI/LIST:INFO/ISFT */
+				free(ctx->isft); /* pedantic */
+				ctx->isft = save(h.size, fp);
+			} else if (!show_tree && !memcmp(h.fcc, "IDIT", 4)) {
+				/* RIFF:AVI/IDIT */
+				/* XXX should be RIFF:AVI/LIST:hdrl/IDIT ??? */
+				/* http://www.den4b.com/forum/viewtopic.php?id=723 */
+				free(ctx->idit); /* pedantic */
+				ctx->idit = save(h.size, fp);
+			} else if (!memcmp(h.fcc, "nctg", 4)) {
 				nctg(ctx, h.size, fp);
 			} else {
 				/* skip unknown fcc */
 				skip(size_pad(h.size), fp);
+			}
+			/*
+			 * SIGMA DP2 bug workaround
+			 */
+			if (ctx->iprd != NULL && ctx->isft != NULL &&
+			    ctx->idit != NULL) {
+				iprintf(ctx, "IPRD/ISFT: %s/%s\n", ctx->iprd, ctx->isft);
+				if (!strcmp(ctx->iprd, "SIGMA") &&
+				    !strcmp(ctx->isft, "DP2")) {
+					fix_sigma_dp2_idit(ctx->idit);
+				}
+				printf("IDIT: %s\n", ctx->idit);
+				free(ctx->iprd);
+				free(ctx->isft);
+				free(ctx->idit);
+				ctx->iprd = NULL;
+				ctx->isft = NULL;
+				ctx->idit = NULL;
 			}
 		}
 		chunksize = 8 + size_pad(h.size);
@@ -227,9 +337,15 @@ main(int argc, char *argv[])
 		errx(EXIT_FAILURE, "not RIFF");
 	}
 	read_fcc(type, fp);
-	printf("RIFF %" PRIu32 " %4.4s\n", h.size, type);
-	ctx.indent = 0;
+	if (show_tree) {
+		printf("RIFF %" PRIu32 " %4.4s\n", h.size, type);
+	}
+	memset(&ctx, 0, sizeof(ctx));
 	riff(&ctx, h.size - 4, fp);
+	if (ctx.idit != NULL) {
+		printf("IDIT: %s\n", ctx.idit);
+		free(ctx.idit);
+	}
 
 	exit(EXIT_SUCCESS);
 }
