@@ -26,6 +26,10 @@
  */
 
 /*
+ * riffdate: try to extract create time of a RIFF file
+ */
+
+/*
  * http://msdn.microsoft.com/en-us/library/windows/desktop/dd318189(v=vs.85).aspx
  */
 
