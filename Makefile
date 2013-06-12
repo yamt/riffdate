@@ -1,6 +1,6 @@
 # $Id$
 
-PROG=	riff
+PROG=	riffdate
 NOMAN=
 
 WARNS?=	3
