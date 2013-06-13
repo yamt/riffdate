@@ -9,3 +9,11 @@ this program tries to extract create time info from a RIFF file.
 	% ./riffdate SDIM0149.AVI
 	IDIT: THU FEB 13 11:03:15 2011
 	% 
+
+this works on AVI files produced by the following cameras at least.
+
+	SIGMA DP2
+	SIGMA DP2 Merrill
+	Nikon COOLPIX S30
+
+currently this looks at RIFF IDIT and Nikon vendor-specific tags.
