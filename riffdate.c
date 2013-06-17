@@ -32,8 +32,14 @@
 /*
  * tested with AVI files produced by the following cameras.
  *    SIGMA DP2
+ *	IDIT: THU FEB 13 11:03:15 2011
+ *	IDIT-exiftime: 2011:02:13 11:03:15
  *    SIGMA DP2 Merrill
+ *	IDIT: FRI SEP 07 23:37:15 2012
+ *	IDIT-exiftime: 2012:09:07 23:37:15
  *    Nikon COOLPIX S30
+ *	ntcg-DateTimeOriginal: 2013:06:11 13:30:25
+ *	ntcg-CreateDate: 2013:06:11 13:30:25
  */
 
 /*
@@ -245,8 +251,8 @@ nctg(struct ctx *ctx, uint32_t rest, FILE *fp)
 			buf = malloc(size);
 			read_bytes(buf, size, fp);
 			printf("%s: %s\n",
-			    (type == 0x0013) ? "DateTimeOriginal" :
-			    "CreateDate", buf);
+			    (type == 0x0013) ? "ntcg-DateTimeOriginal" :
+			    "ntcg-CreateDate", buf);
 			free(buf);
 			break;
 		default:
@@ -257,6 +263,75 @@ nctg(struct ctx *ctx, uint32_t rest, FILE *fp)
 		rest -= 4 + size;
 	}
 	ctx->indent--;
+}
+
+static char *
+convert_to_exif_time(char *buf, size_t buflen, const char *from)
+{
+	/*
+	 * from:
+	 * 	FRI SEP 07 23:37:15 2012
+	 * to:
+	 * 	YYYY:MM:DD hh:mm:ss
+	 */
+
+#if 0
+	static const char * const day_of_week[] = {
+		"sun", "mon", "tue", "wed", "thu", "fri", "sat"
+	};
+#endif
+	static const char * const months[] = {
+		"jun", "feb", "mar", "apr", "may", "jun",
+		"jul", "aug", "sep", "oct", "nov", "dec"
+	};
+	unsigned int i;
+	char day_of_week[3];
+	char month[3];
+	int YYYY;
+	int MM;
+	int DD;
+	int hh;
+	int mm;
+	int ss;
+	int ret;
+
+	ret = sscanf(from, "%3s %3s %2d %2d:%2d:%2d %4d",
+	    day_of_week, month, &DD, &hh, &mm, &ss, &YYYY);
+	if (ret != 7) {
+		printf("%d\n", ret);
+		return NULL;
+	}
+	MM = -1;
+	for (i = 0; i < sizeof(months) / sizeof(months[0]); i++) {
+		if (!strcasecmp(months[i], month)) {
+			MM = i + 1;
+			break;
+		}
+	}
+	if (MM == -1) {
+		printf("MM=-1\n");
+		return NULL;
+	}
+	ret = snprintf(buf, buflen, "%04d:%02d:%02d %02d:%02d:%02d",
+	    YYYY, MM, DD, hh, mm, ss);
+	if (ret == -1 || ret >= buflen) {
+		return NULL;
+	}
+	return buf;
+}
+
+static void
+print_idit(const char *idit)
+{
+	char buf[100];
+	char *exif_time;
+
+	exif_time = convert_to_exif_time(buf, sizeof(buf), idit);
+	if (exif_time != NULL) {
+		printf("IDIT-exiftime: %s\n", exif_time);
+	} else {
+		printf("IDIT: %s\n", idit);
+	}
 }
 
 static void
@@ -309,7 +384,7 @@ riff(struct ctx *ctx, uint32_t rest, FILE *fp)
 				    !strcmp(ctx->isft, "DP2")) {
 					fix_sigma_dp2_idit(ctx->idit);
 				}
-				printf("IDIT: %s\n", ctx->idit);
+				print_idit(ctx->idit);
 				free(ctx->iprd);
 				free(ctx->isft);
 				free(ctx->idit);
@@ -378,7 +453,7 @@ main(int argc, char *argv[])
 	memset(&ctx, 0, sizeof(ctx));
 	riff(&ctx, h.size - 4, fp);
 	if (ctx.idit != NULL) {
-		printf("IDIT: %s\n", ctx.idit);
+		print_idit(ctx.idit);
 		free(ctx.idit);
 	}
 
