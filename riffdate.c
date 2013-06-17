@@ -281,7 +281,7 @@ convert_to_exif_time(char *buf, size_t buflen, const char *from)
 	};
 #endif
 	static const char * const months[] = {
-		"jun", "feb", "mar", "apr", "may", "jun",
+		"jan", "feb", "mar", "apr", "may", "jun",
 		"jul", "aug", "sep", "oct", "nov", "dec"
 	};
 	unsigned int i;
