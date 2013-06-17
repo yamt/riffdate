@@ -298,7 +298,6 @@ convert_to_exif_time(char *buf, size_t buflen, const char *from)
 	ret = sscanf(from, "%3s %3s %2d %2d:%2d:%2d %4d",
 	    day_of_week, month, &DD, &hh, &mm, &ss, &YYYY);
 	if (ret != 7) {
-		printf("%d\n", ret);
 		return NULL;
 	}
 	MM = -1;
@@ -309,7 +308,6 @@ convert_to_exif_time(char *buf, size_t buflen, const char *from)
 		}
 	}
 	if (MM == -1) {
-		printf("MM=-1\n");
 		return NULL;
 	}
 	ret = snprintf(buf, buflen, "%04d:%02d:%02d %02d:%02d:%02d",
