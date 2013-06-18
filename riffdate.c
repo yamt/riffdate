@@ -47,6 +47,8 @@
  * http://msdn.microsoft.com/en-us/library/windows/desktop/dd318189(v=vs.85).aspx
  */
 
+#include <sys/cdefs.h>
+
 #include <err.h>
 #include <inttypes.h>
 #include <stdbool.h>
@@ -55,6 +57,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
+#if !defined(__arraycount)
+#define	__arraycount(a)	(sizeof(a) / sizeof(*a))
+#endif
 
 bool show_tree = false;  /* a knob for debug */
 
@@ -212,7 +218,7 @@ fix_sigma_dp2_idit(char *buf)
 	if (strlen(buf) != strlen("SUN APR 0> 11:07:37 200=\n ")) {
 		return;
 	}
-	for (i = 0; i < sizeof(where) / sizeof(where[0]); i++) {
+	for (i = 0; i < __arraycount(where); i++) {
 		const char ch = buf[where[i]];
 
 		if (ch < '0' || '0' + 16 <= ch) {
@@ -223,7 +229,7 @@ fix_sigma_dp2_idit(char *buf)
 	/*
 	 * fix digits
 	 */
-	for (i = 0; i < sizeof(where) / sizeof(where[0]); i++) {
+	for (i = 0; i < __arraycount(where); i++) {
 		fix_sigma_dp2_idit_number(buf, where[i], 2);
 	}
 }
@@ -301,7 +307,7 @@ convert_to_exif_time(char *buf, size_t buflen, const char *from)
 		return NULL;
 	}
 	MM = -1;
-	for (i = 0; i < sizeof(months) / sizeof(months[0]); i++) {
+	for (i = 0; i < __arraycount(months); i++) {
 		if (!strcasecmp(months[i], month)) {
 			MM = i + 1;
 			break;
