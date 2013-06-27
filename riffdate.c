@@ -184,14 +184,14 @@ iprintf(const struct ctx *ctx, const char *format, ...)
 }
 
 /*
- * SIGMA DP2 seems to produce a broken IDIT like
+ * SIGMA DP1, DP1s, DP1x, DP2, DP2s, DP2x produce broken IDIT values like
  *    "THU FEB 0= 0;:03:0? 200;\n "
  *    "SUN APR 0> 11:08:03 200=\n "
  *    "SUN APR 0> 11:07:37 200=\n "
  */
 
 static void
-fix_sigma_dp2_idit_number(char *buf, unsigned int idx, unsigned int n)
+fix_sigma_idit_number(char *buf, unsigned int idx, unsigned int n)
 {
 	unsigned int i;
 	unsigned int v;
@@ -207,7 +207,7 @@ fix_sigma_dp2_idit_number(char *buf, unsigned int idx, unsigned int n)
 }
 
 static void
-fix_sigma_dp2_idit(char *buf)
+fix_sigma_idit(char *buf)
 {
 	static const unsigned int where[] = {8, 11, 14, 17, 22};
 	unsigned int i;
@@ -230,8 +230,25 @@ fix_sigma_dp2_idit(char *buf)
 	 * fix digits
 	 */
 	for (i = 0; i < __arraycount(where); i++) {
-		fix_sigma_dp2_idit_number(buf, where[i], 2);
+		fix_sigma_idit_number(buf, where[i], 2);
 	}
+}
+
+static bool
+has_sigma_idit_bug(const char *isft)
+{
+	static const char * const isft_list[] = {
+	    "DP1", "DP1S", "DP1X",
+	    "DP2", "DP2S", "DP2X",
+	};
+	unsigned int i;
+
+	for (i = 0; i < __arraycount(isft_list); i++) {
+		if (!strcmp(isft, isft_list[i])) {
+			return true;
+		}
+	}
+	return false;
 }
 
 /* http://www.sno.phy.queensu.ca/~phil/exiftool/TagNames/Nikon.html#AVITags */
@@ -385,8 +402,8 @@ riff(struct ctx *ctx, uint32_t rest, FILE *fp)
 			if (ctx->iprd != NULL && ctx->isft != NULL &&
 			    ctx->idit != NULL) {
 				if (!strcmp(ctx->iprd, "SIGMA") &&
-				    !strcmp(ctx->isft, "DP2")) {
-					fix_sigma_dp2_idit(ctx->idit);
+				    has_sigma_idit_bug(ctx->isft)) {
+					fix_sigma_idit(ctx->idit);
 				}
 				print_idit(ctx->idit);
 				free(ctx->iprd);
