@@ -3,11 +3,11 @@ riffdate
 
 This program tries to extract create time info from a RIFF file.
 
-	% ./riffdate DSCN0345.AVI
-	DateTimeOriginal: 2013:06:11 13:30:25
-	CreateDate: 2013:06:11 13:30:25
-	% ./riffdate SDIM0149.AVI
-	IDIT: THU FEB 13 11:03:15 2011
+	% ./riffdate DP2M2622.AVI 
+	IDIT-exiftime: 2013:06:27 21:24:22
+	% ./riffdate DSCN1060.AVI 
+	ntcg-DateTimeOriginal: 2013:06:27 21:27:28
+	ntcg-CreateDate: 2013:06:27 21:27:28
 	% 
 
 This works on AVI files produced by the following cameras at least.
