@@ -16,4 +16,8 @@ regress:	${PROG}
 	diff -u ${.CURDIR}/expected/${T} ${T}.out
 .endfor
 
+.for T in ${TESTFILES}
+CLEANFILES+= ${T}.out
+.endfor
+
 .include <bsd.prog.mk>
