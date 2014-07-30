@@ -237,6 +237,10 @@ fix_sigma_idit(char *buf)
 static bool
 has_sigma_idit_bug(const char *isft)
 {
+	/*
+	 * The following list of affected models and their ISFT values
+	 * are kindly provided by SIGMA.
+	 */
 	static const char * const isft_list[] = {
 	    "DP1", "DP1S", "DP1X",
 	    "DP2", "DP2S", "DP2X",
