@@ -339,7 +339,7 @@ convert_to_exif_time(char *buf, size_t buflen, const char *from)
 	}
 	ret = snprintf(buf, buflen, "%04d:%02d:%02d %02d:%02d:%02d",
 	    YYYY, MM, DD, hh, mm, ss);
-	if (ret == -1 || ret >= buflen) {
+	if (ret == -1 || (size_t)ret >= buflen) {
 		return NULL;
 	}
 	return buf;
