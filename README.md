@@ -16,4 +16,6 @@ This works on AVI files produced by the following cameras at least.
 	SIGMA DP2 Merrill
 	Nikon COOLPIX S30
 
-Currently this looks at RIFF IDIT and Nikon vendor-specific tags.
+Currently this program looks at RIFF IDIT and Nikon vendor-specific tags.
+This program also tries to work around broken RIFF IDIT produced by
+some of SIGMA cameras. (SIGMA DP2 and others.)
