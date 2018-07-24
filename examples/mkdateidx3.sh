@@ -163,7 +163,7 @@ while read F; do
 			# XXX
 			ORIG="${B##*-}"
 			if [ "${F}" != "${ORIG}" ]; then
-				echo "${F} => ${ORIG}"
+				echo "${F} (${ORIG})"
 			fi
 		else
 			ORIG="${B}"
