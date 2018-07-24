@@ -171,7 +171,7 @@ while read F; do
 		DIR="${LINKDIR}/${YEAR}/${DAY}"
 		NEW="${TS}-${ORIG}"
 		if [ -e "${DIR}/${NEW}" ]; then
-			echo "skip $F (already exist)"
+			echo "skip $F (${NEW} already exist)"
 		else
 			echo "mklink ${F} -> ${NEW} (${TS})"
 			mkdir -p "${DIR}"
