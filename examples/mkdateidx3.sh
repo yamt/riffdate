@@ -158,7 +158,7 @@ while read F; do
 	esac
 	if [ ${DONE} -eq 1 ]; then
 		B=$(basename "${F}")
-		LEN=$(echo -n ${B%%.*}|wc -c)
+		LEN=$(printf "%s" ${B%%.*}|wc -c)
 		if [ ${LEN} -gt 8 ]; then
 			# XXX
 			ORIG="${B##*-}"
